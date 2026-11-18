@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/copytix_app.dart';
-import 'data/local/database/database_provider.dart';
+import 'core/config/supabase_config.dart';
+import 'features/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SupabaseConfig.validate();
 
-  // Membuka database lokal dan memverifikasi koneksi SQLite.
-  try {
-    await DatabaseProvider.instance.customSelect('SELECT 1').getSingle();
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.publishableKey,
+  );
 
-    debugPrint('Copytix SQLite database connected successfully.');
-  } catch (error, stackTrace) {
-    debugPrint('Failed to initialize Copytix database: $error');
-    debugPrintStack(stackTrace: stackTrace);
-    rethrow;
-  }
-
-  runApp(const CopytixApp());
+  runApp(const CopytixApp(home: AuthGate()));
 }
