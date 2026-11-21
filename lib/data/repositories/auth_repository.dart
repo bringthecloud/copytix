@@ -1,3 +1,4 @@
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
@@ -24,15 +25,24 @@ class AuthRepository {
 
   Future<Map<String, dynamic>> getCurrentProfile() async {
     final user = _client.auth.currentUser;
+
     if (user == null) {
-      throw AuthException('Sesi login tidak ditemukan. Silakan login kembali.');
+      throw AuthException(
+        'Sesi login tidak ditemukan. Silakan login kembali.',
+      );
     }
 
     final profile = await _client
         .from('pengguna')
-        .select('id_pengguna, email, nama, role, aktif')
-        .eq('id_pengguna', user.id)
-        .single();
+        .select('id, email, nama, role, aktif')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (profile == null) {
+      throw AuthException(
+        'Profil pengguna tidak ditemukan. Hubungi Admin/Pemilik.',
+      );
+    }
 
     return profile;
   }

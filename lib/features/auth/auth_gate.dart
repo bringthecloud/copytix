@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,7 +17,9 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: repository.authStateChanges,
       builder: (context, snapshot) {
-        final session = snapshot.data?.session ?? repository.currentSession;
+        final session =
+            snapshot.data?.session ?? repository.currentSession;
+
         if (session == null) {
           return const LoginPage();
         }
@@ -31,7 +34,10 @@ class AuthGate extends StatelessWidget {
 }
 
 class _ProfileGate extends StatefulWidget {
-  const _ProfileGate({required this.repository, super.key});
+  const _ProfileGate({
+    required this.repository,
+    super.key,
+  });
 
   final AuthRepository repository;
 
@@ -53,31 +59,59 @@ class _ProfileGateState extends State<_ProfileGate> {
     return FutureBuilder<Map<String, dynamic>>(
       future: _profileFuture,
       builder: (context, snapshot) {
+        // Tampilkan loading selama profil sedang dimuat.
         if (snapshot.connectionState != ConnectionState.done) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
           );
         }
 
+        // Tangani jika pengambilan profil mengalami error.
         if (snapshot.hasError) {
           return _AccessErrorPage(
-            message: 'Profil pengguna tidak dapat dimuat. ${snapshot.error}',
+            message:
+                'Profil pengguna tidak dapat dimuat. ${snapshot.error}',
+            onSignOut: widget.repository.signOut,
+          );
+        }
+
+        // Pastikan data profil tersedia.
+        if (!snapshot.hasData) {
+          return _AccessErrorPage(
+            message: 'Data profil pengguna tidak ditemukan.',
             onSignOut: widget.repository.signOut,
           );
         }
 
         final profile = snapshot.data!;
+
         final isActive = profile['aktif'] == true;
         final role = profile['role'] as String?;
-        if (!isActive || (role != 'admin_pemilik' && role != 'kasir')) {
+
+        // Pastikan akun aktif dan role tidak kosong.
+        if (!isActive || role == null) {
           return _AccessErrorPage(
-            message: 'Akun tidak aktif atau role belum diatur oleh Admin/Pemilik.',
+            message:
+                'Akun tidak aktif atau role belum diatur oleh Admin/Pemilik.',
             onSignOut: widget.repository.signOut,
           );
         }
 
+        // Pastikan role sesuai dengan hak akses aplikasi.
+        if (role != 'admin_pemilik' && role != 'kasir') {
+          return _AccessErrorPage(
+            message:
+                'Role akun tidak dikenali. Silakan hubungi Admin/Pemilik.',
+            onSignOut: widget.repository.signOut,
+          );
+        }
+
+        // Jika profil valid, tampilkan dashboard.
         return DashboardPage(
-          userName: profile['nama'] as String? ?? 'Pengguna Copytix',
+          userName:
+              profile['nama'] as String? ?? 'Pengguna Copytix',
           role: role,
           onSignOut: widget.repository.signOut,
         );
@@ -87,7 +121,10 @@ class _ProfileGateState extends State<_ProfileGate> {
 }
 
 class _AccessErrorPage extends StatelessWidget {
-  const _AccessErrorPage({required this.message, required this.onSignOut});
+  const _AccessErrorPage({
+    required this.message,
+    required this.onSignOut,
+  });
 
   final String message;
   final Future<void> Function() onSignOut;
@@ -97,18 +134,29 @@ class _AccessErrorPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: const BoxConstraints(
+            maxWidth: 420,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline, size: 48, color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.lock_outline,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(height: 16),
-                Text(message, textAlign: TextAlign.center),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 20),
                 FilledButton(
-                  onPressed: () async => onSignOut(),
+                  onPressed: () async {
+                    await onSignOut();
+                  },
                   child: const Text('Keluar'),
                 ),
               ],
